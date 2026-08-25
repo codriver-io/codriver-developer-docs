@@ -30,7 +30,7 @@ Entities published by a feed are **points**. `lat`/`lng` is the whole geometry â
 | `lat` | yes | number | WGS84 latitude in degrees, `[-90, 90]`. |
 | `lng` | yes | number | WGS84 longitude in degrees, `[-180, 180]`. |
 | `properties` | no | object | Free-form per-kind metadata. Plain object only (not array). Strings, numbers, booleans, nested objects, and arrays all fine. â‰¤16 KB. A short list of keys is [reserved](#reserved-property-keys) and silently dropped. |
-| `ttl_seconds` | no | number \| null | `null` = persistent. Omitted = use the kind's [default TTL](/concepts/entities-and-kinds#ttl). `0..2592000` (max 30 days). |
+| `ttl_seconds` | no | number \| null | `null` = persistent. Omitted = use the kind's [default TTL](/concepts/entities-and-kinds#ttl-semantics). `0..2592000` (max 30 days). |
 | `observed_at` | no | ISO-8601 string | When the real-world thing was observed. Omitted = `now()`. |
 
 ## Kinds
