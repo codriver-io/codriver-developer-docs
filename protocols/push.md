@@ -26,7 +26,7 @@ POST https://app.codriver.io/v2/feeds/<your-token>/entities
   { "accepted": <int>, "rejected": <int>, "errors": [ {…} ] }
 ```
 
-The token *is* the auth — no `X-Codriver-Auth` header needed. Treat it like a bearer secret.
+The token *is* the auth — there is no separate header and no session cookie. Treat it like a bearer secret: it is shown once at registration, it does not expire, and anyone holding it can write to your layer. If it leaks, [rotate it](#registering-a-push-feed).
 
 ## Registering a push feed
 
@@ -90,9 +90,8 @@ The body is always a JSON **array** of [v1 entities](/concepts/entities-and-kind
 |---|---|
 | Max entities per request | 5 000 |
 | Max requests/minute per token | 60 |
-| Max entities/minute per token | 10 000 |
 
-Exceeding any of these returns HTTP `429 Too Many Requests` with a `Retry-After` header. Back off and retry.
+Exceeding the rate limit returns HTTP `429 Too Many Requests` with a `Retry-After` header — back off and retry. A batch over 5 000 entities is rejected outright with `400`; split it.
 
 ## Error responses
 
@@ -110,17 +109,18 @@ Per-row rejections (in `errors[]`) don't fail the whole batch. Common reasons: u
 
 | | Pull | Push |
 |---|---|---|
-| Who initiates | codriver | your provider |
-| Idle behavior | zero traffic | needs your scheduler |
-| Spatial filtering | codriver passes lat/lng/radius | you push everything; codriver indexes it |
-| Best for | live data with spatial queries | event-driven feeds, backfills, low-volume sources |
-| Auth model | shared secret header | bearer token in URL path |
-| Caching by codriver | yes (4-30 s SWR) | no |
+| Who initiates | codriver, on your interval | you, whenever you have updates |
+| What you run | a URL (a static file will do) | a scheduler or an event handler |
+| Latency floor | your `pull_interval_seconds` (min 30 s) | as fast as you send |
+| Auth model | your own header, replayed by codriver | feed token in the URL path |
+| Failure handling | backoff, auto-disable after 20 failures | your retry logic |
+| Best for | a snapshot you can already publish | event-driven feeds, backfills, bursty sources |
 
-Most providers should start with [pull](/protocols/pull). Push is the right answer when your upstream is event-driven (webhook in, push to codriver) or when you're doing a one-time bulk load.
+Most feeds should start with [pull](/protocols/pull) — there is less of it to keep running. Push is the right answer when your data arrives as events (a webhook you already receive) or when you are doing a one-time bulk load.
 
 ## See also
 
 - **[Pull protocol](/protocols/pull)** — the canonical integration
 - **[Entities and kinds](/concepts/entities-and-kinds)** — the data shape
 - **[Kind catalog](/reference/kinds)** — every kind you can publish
+- **[Read API](/reference/read-api)** — reading back what you published

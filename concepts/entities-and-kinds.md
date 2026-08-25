@@ -19,6 +19,8 @@ The data model is intentionally small: every pin on the codriver map is an **ent
 }
 ```
 
+Entities published by a feed are **points**. `lat`/`lng` is the whole geometry — a feed cannot publish a line or a polygon, and a `properties` key holding a coordinate array (`line_coordinates` and friends) is stored as data but is not drawn as a shape. Shaped entities on the map, such as road closures spanning a stretch of road, are produced by codriver itself.
+
 ### Field reference
 
 | Field | Required | Type | Notes |
@@ -27,7 +29,7 @@ The data model is intentionally small: every pin on the codriver map is an **ent
 | `kind` | yes | string | One of the canonical kind ids in [the catalog](/reference/kinds). Anything outside the catalog is rejected. |
 | `lat` | yes | number | WGS84 latitude in degrees, `[-90, 90]`. |
 | `lng` | yes | number | WGS84 longitude in degrees, `[-180, 180]`. |
-| `properties` | no | object | Free-form per-kind metadata. Plain object only (not array). Strings, numbers, booleans, nested objects, and arrays all fine. ≤16 KB. |
+| `properties` | no | object | Free-form per-kind metadata. Plain object only (not array). Strings, numbers, booleans, nested objects, and arrays all fine. ≤16 KB. A short list of keys is [reserved](#reserved-property-keys) and silently dropped. |
 | `ttl_seconds` | no | number \| null | `null` = persistent. Omitted = use the kind's [default TTL](/concepts/entities-and-kinds#ttl). `0..2592000` (max 30 days). |
 | `observed_at` | no | ISO-8601 string | When the real-world thing was observed. Omitted = `now()`. |
 
@@ -57,7 +59,7 @@ Each entity belongs to exactly one **layer**. A layer is codriver's grouping uni
 │ └──────────────┘ └──────────────┘ └──────────────────────────┘ │
 │        ▲                ▲                       ▲              │
 │        │                │                       │              │
-│   public sources    public sources         your /relay         │
+│   public sources    public sources          your feed URL       │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -79,6 +81,16 @@ If you keep publishing the same `external_id`, codriver refreshes `last_seen_at`
 
 If you stop publishing, the row dies naturally at `expires_at`. No retraction call needed.
 
+## Reserved property keys
+
+`properties` is free-form with one exception: a few keys are read back by codriver itself and are **removed from anything you submit**, silently, on every ingest path. Today that is:
+
+| Key | Owned by |
+|---|---|
+| `disputed_until` | the consensus engine — it is how a disputed pin is suppressed |
+
+The list can grow when codriver starts interpreting a new key. Two consequences worth internalising: do not use these names for your own data (your value will vanish), and do not expect to influence codriver's consensus state through `properties` — confirmations and disputes come from drivers, not from feeds.
+
 ## Reconciliation
 
 codriver dedupes by `(your-feed, external_id)`. Two consequences:
@@ -86,12 +98,20 @@ codriver dedupes by `(your-feed, external_id)`. Two consequences:
 - **Re-publishing is idempotent.** Same `external_id` → same row, properties refreshed, expires_at extended.
 - **`external_id` must be stable per real-world thing.** If your upstream changes their id every fetch, the entity flickers in/out instead of refreshing. Wrap with your own stable id (`sha256(name + lat + lng).slice(0,16)`).
 
-## Submitter trust
+## Visibility and trust
 
-Every observation is recorded with the submitting feed's id (forensic rollback if a feed misbehaves). Community feeds default to private until reviewed; approved feeds appear in the public catalog for any user to subscribe.
+Every entity carries the id of the feed that submitted it, so a misbehaving feed can be rolled back after the fact.
+
+A new feed is **unapproved** and **private**. codriver polls a pull feed and accepts pushes straight away — so you can verify the wiring — but the entities are not served to drivers, and the feed does not appear in the source catalogue. A curator reviews it and you get an email either way.
+
+After approval:
+
+- **public** — the feed appears in `GET /v2/sources` as `feed:<feed-id>`, and its entities are served from the [read API](/reference/read-api) like any other source.
+- **private** — the data stays yours.
 
 ## See also
 
 - **[Pull protocol](/protocols/pull)** — the canonical integration
 - **[Push protocol](/protocols/push)** — alternative integration mode
 - **[Kind catalog reference](/reference/kinds)** — every kind + properties
+- **[Read API](/reference/read-api)** — reading entities back out
