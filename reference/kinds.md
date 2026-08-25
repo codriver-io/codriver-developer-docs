@@ -59,7 +59,7 @@ Every entity codriver renders is one of the kinds below. Providers map their ups
 }
 ```
 
-The entity's `lat` / `lng` is the polyline midpoint. The full polyline goes in `properties.line_coordinates`.
+The entity's `lat` / `lng` is the position of the jam. `line_coordinates` is accepted and stored, but **an entity published by a feed is drawn as a point** — codriver does not render a feed-supplied polyline. Send it if you have it (it is useful data), but do not count on a shape appearing on the map.
 
 ## POIs (persistent)
 
@@ -96,6 +96,10 @@ The entity's `lat` / `lng` is the polyline midpoint. The full polyline goes in `
   "usage_cost":      "$0.41/kWh"
 }
 ```
+
+## Rejected kinds
+
+`kind` is validated per row at ingest. A row whose kind is not in this catalog is rejected individually — the rest of your batch or snapshot still lands. On push you see it in the `errors` array of the response; on pull it is counted as a rejection against that poll.
 
 ## Adding a new kind
 

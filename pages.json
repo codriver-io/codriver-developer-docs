@@ -1,0 +1,61 @@
+{
+  "$comment": "path -> page metadata. `path` is the Wiki.js path (no leading slash). Adding an entry here and running publish creates the page; ids are resolved by path at publish time, never hardcoded.",
+  "pages": [
+    {
+      "path": "home",
+      "file": "home.md",
+      "title": "Build a provider for codriver",
+      "description": "Publish traffic, hazard, camera or charger data to the codriver map.",
+      "tags": ["overview", "quickstart"]
+    },
+    {
+      "path": "concepts/entities-and-kinds",
+      "file": "concepts/entities-and-kinds.md",
+      "title": "Entities and kinds",
+      "description": "The entity shape, the kind taxonomy, TTL semantics and reconciliation.",
+      "tags": ["concepts", "reference"]
+    },
+    {
+      "path": "protocols/pull",
+      "file": "protocols/pull.md",
+      "title": "Pull protocol (canonical)",
+      "description": "codriver polls a JSON URL you control on an interval you choose.",
+      "tags": ["protocols", "pull"]
+    },
+    {
+      "path": "protocols/push",
+      "file": "protocols/push.md",
+      "title": "Push protocol (alternative)",
+      "description": "POST entity batches to codriver with a feed token.",
+      "tags": ["protocols", "push"]
+    },
+    {
+      "path": "reference/kinds",
+      "file": "reference/kinds.md",
+      "title": "Kind catalog",
+      "description": "Every kind id you can publish, with default TTLs and expected properties.",
+      "tags": ["reference", "kinds"]
+    },
+    {
+      "path": "reference/read-api",
+      "file": "reference/read-api.md",
+      "title": "Read API",
+      "description": "GET /v2/entities/nearby and GET /v2/sources — reading what is on the map.",
+      "tags": ["reference", "read"]
+    },
+    {
+      "path": "examples/build-a-provider",
+      "file": "examples/build-a-provider.md",
+      "title": "Walkthrough: building a provider",
+      "description": "An end-to-end feed service, from upstream fetch to registration.",
+      "tags": ["examples", "walkthrough"]
+    },
+    {
+      "path": "changelog",
+      "file": "changelog.md",
+      "title": "Changelog",
+      "description": "Changes to the developer surface and to this documentation.",
+      "tags": ["changelog"]
+    }
+  ]
+}
