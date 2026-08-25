@@ -1,0 +1,12 @@
+{
+  "name": "codriver-developer-docs",
+  "private": true,
+  "type": "module",
+  "description": "Content for developer.codriver.io (Wiki.js). Markdown here is the source of truth; scripts/publish.mjs pushes it.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "check": "node scripts/publish.mjs --check",
+    "pull": "node scripts/publish.mjs --pull",
+    "publish:wiki": "node scripts/publish.mjs"
+  }
+}
