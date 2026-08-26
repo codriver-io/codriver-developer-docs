@@ -11,6 +11,9 @@ protocols/push.md              /protocols/push
 reference/kinds.md             /reference/kinds
 reference/read-api.md          /reference/read-api
 examples/build-a-provider.md   /examples/build-a-provider
+guides/build-an-app.md         /guides/build-an-app
+guides/ntfy-app.md             /guides/ntfy-app
+guides/install-an-app.md       /guides/install-an-app
 changelog.md                   /changelog
 pages.json                     path → title/description/tags for each of the above
 ```
