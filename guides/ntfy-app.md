@@ -2,7 +2,9 @@
 
 A worked example: a widget that shows the notifications from your phone on the car screen. It is the first app built on the platform, it is open source, and it is the thing to copy when you build your own.
 
-> **Status — 2026-08-26.** The app is public and deployed: the source is at <https://github.com/codriver-io/codriver-app-ntfy> and the page it serves is at <https://ntfy-client-codriver.pages.dev>. Both are live and can be read today. The surrounding platform — the marketplace listing and the account-page install flow — is not finished yet, so you cannot install it from your account until it is. Build against this page in the meantime; the [changelog](/changelog) records when installation opens.
+> **Status — 2026-08-26.** The app is public and deployed: source at <https://github.com/codriver-io/codriver-app-ntfy>, running at <https://ntfy-client-codriver.pages.dev>.
+>
+> It is **not yet a catalogue entry**, so it does not appear in the marketplace list. To run it today, install the first-party **Custom page** app from your account and give it the URL above — that is the same sandboxed frame, and the app reads its settings the same way. It will be submitted to the catalogue as a normal entry.
 
 Read [Build an app](/guides/build-an-app) first. This page assumes the [context message](/guides/build-an-app#the-context-message) and the [embeddability requirements](/guides/build-an-app#it-must-be-embeddable) rather than repeating them.
 

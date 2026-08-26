@@ -105,5 +105,5 @@ Also useful:
 ## Status of this site
 
 - The v1 entity contract is stable: `external_id`, `kind`, `lat`, `lng`, `properties`, `ttl_seconds` and `observed_at` do not change without a 90-day notice emailed to feed owners. New kinds and additive fields ship any time.
-- **The app platform is not live yet** as of 2026-08-25. Its pages are published ahead of the release so you can build against the contract; each one says so at the top, and the [changelog](/changelog) will carry the date it ships.
+- **The app platform went live on 2026-08-26** — catalogue, submission and per-driver installs. See the [changelog](/changelog).
 - Questions, ambiguity, missing kinds: <support@codriver.io>.
