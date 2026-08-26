@@ -2,7 +2,7 @@
 
 A worked example: a widget that shows the notifications from your phone on the car screen. It is the first app built on the platform, it is open source, and it is the thing to copy when you build your own.
 
-> **Status — 2026-08-25.** Being built alongside the platform itself. Neither the repository at <https://github.com/gauthiergarnier/codriver-app-ntfy> nor the deployed page at <https://ntfy-client-codriver.pages.dev> resolves yet — as of today both return nothing. This page describes what is being built so you can read the design before the code lands. The [changelog](/changelog) gets a dated entry when they are public.
+> **Status — 2026-08-26.** The app is public and deployed: the source is at <https://github.com/codriver-io/codriver-app-ntfy> and the page it serves is at <https://ntfy-client-codriver.pages.dev>. Both are live and can be read today. The surrounding platform — the marketplace listing and the account-page install flow — is not finished yet, so you cannot install it from your account until it is. Build against this page in the meantime; the [changelog](/changelog) records when installation opens.
 
 Read [Build an app](/guides/build-an-app) first. This page assumes the [context message](/guides/build-an-app#the-context-message) and the [embeddability requirements](/guides/build-an-app#it-must-be-embeddable) rather than repeating them.
 
@@ -136,7 +136,7 @@ Priority and tags from ntfy are available, and the app uses them for one thing o
 
 **The repository is the reference implementation.** It is deliberately small — a single page, no framework, no build step — so that reading it end to end is a reasonable way to spend ten minutes before writing your own.
 
-- Source: <https://github.com/gauthiergarnier/codriver-app-ntfy>
+- Source: <https://github.com/codriver-io/codriver-app-ntfy>
 - Live page: <https://ntfy-client-codriver.pages.dev>
 
 Fork it, replace the ntfy-specific parts, keep the scaffolding: the context listener, the `ready` ping, the idempotent render, the reconnect loop, the state table. Those four are the same in every widget and they are where the platform's sharp edges are.
