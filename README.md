@@ -18,7 +18,24 @@ changelog.md                   /changelog
 pages.json                     path → title/description/tags for each of the above
 ```
 
-## Publishing
+## How this reaches the wiki
+
+Since 2026-08-26 the production and staging wikis **sync with this repository**
+(Wiki.js git storage, `sync` mode, every 5 minutes). Push to `main` and the
+change appears on the site shortly after; edit a page in the wiki UI and the
+change is committed back here by `Wiki.js sync <wikijs-sync@codriver.io>`.
+
+Two consequences worth knowing:
+
+- **Pull before you edit.** The wiki can have committed a UI edit since you last
+  fetched. `git pull` first, or you will be resolving a conflict Wiki.js has no
+  way to help with.
+- **`scripts/publish.mjs` is still here and still works**, but it is now the
+  fallback rather than the normal path — use it to force a push when sync is
+  wedged, or to publish to an environment that is not wired up. Everyday
+  changes just need a commit.
+
+## Publishing (manual fallback)
 
 A token is needed for every command, including `--check`: anonymous visitors
 can list pages but not read their markdown. Mint one per environment in

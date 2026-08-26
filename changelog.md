@@ -31,6 +31,18 @@ New pages:
 
 The [home page](/home) is reframed around both paths. Nothing about the feed protocols changed.
 
+## 2026-08-26 — this site is now published from git
+
+The pages you are reading are generated from a public repository:
+<https://github.com/codriver-io/codriver-developer-docs>. Edits made here and
+edits made there converge — the wiki commits its own changes back, so the
+repository is the record of what this documentation has said over time.
+
+Practically, for anyone integrating: you can read the source of any page, see
+when a claim changed and why, and open an issue against a page that is wrong.
+The three months of drift that the entry below describes happened because there
+was no such record.
+
 ## 2026-08-25 — documentation catch-up, and two limits that now bite
 
 This site had not been touched since May. Several pages described an integration shape that was never the one `POST /v2/feeds` actually gives you. Everything below is either a correction to the docs or a change to the service; both are called out.
