@@ -79,7 +79,7 @@ The host sends your page exactly one kind of message. It arrives by `postMessage
 | `units` | Format distances and speeds accordingly. If your app has nothing unit-shaped, ignore it. |
 | `uiSize` | The driver's **density preference**: 1 is compact, 10 is largest, 6 is the default. Not a scale factor — see below. |
 | `slot` | Which of the two widget slots you were installed into. Presentation only; do not change behaviour on it. |
-| `size` | The frame's content box in CSS pixels. Today that is about 300 × 130 and fixed. |
+| `size` | The **iframe's content box, in CSS pixels**. Today that is about 300 × 130 and fixed. |
 | `device` | `"tesla"` in the car, `"other"` anywhere else — a phone or a desktop browser signed in to codriver. |
 | `config` | Whatever the driver filled in, keyed by your `config_schema` keys. An optional field the driver left blank is **omitted from the object**, never present as `null` — that is a guarantee, so `'topic' in config` and `config.topic` agree. |
 
@@ -87,9 +87,15 @@ The host sends your page exactly one kind of message. It arrives by `postMessage
 
 ### uiSize is a preference, not a multiplier
 
-**Do not compute pixels from `uiSize`.** There is deliberately no published formula, because the host already applies its own zoom before your frame is laid out — a widget that also scaled its type by `uiSize` would apply the driver's preference twice and end up either unreadable or clipped.
+**Do not scale your layout by `uiSize`.** The host has already applied its own zoom before your frame is laid out, so a widget that multiplied its geometry by the driver's preference would apply that preference twice and end up either unreadable or clipped. Lay out against `size`, which is real pixels and already reflects everything the host has done.
 
-Lay out against `size`, which is real pixels and already reflects everything the host has done. Then use `uiSize` for a nudge in the same direction: bias your type a step smaller near 1, a step larger near 10, leave it alone around 6. Three buckets is a reasonable amount of attention to pay it, and none at all is defensible.
+Where `uiSize` does belong is your **base type size** — and there, a shared answer is worth more than a clever one. Two panels sitting side by side in the same car, each interpreting a bare 1–10 range its own way, visibly disagree. So if you have no better idea, use this scale:
+
+```js
+const fontSizePx = 10.5 + ctx.uiSize * 0.6;   // ≈11px at 1, 14px at the default 6, 16.5px at 10
+```
+
+**Suggested, not enforced.** The host does not check it and nothing breaks if you deviate — a widget whose content genuinely needs bigger numbers should use bigger numbers. It exists so that independent widgets land in the same neighbourhood rather than each picking a different one. The [reference app](/guides/ntfy-app) uses exactly this line.
 
 ### When it arrives
 
@@ -103,6 +109,10 @@ Four times, at least:
 So **handle it arriving more than once**. Make your render function idempotent: take the latest context, redraw, do not accumulate listeners or connections. A theme flip must not open a second connection to your backend.
 
 `ready` is the only message the host accepts from your page. Anything else is ignored.
+
+**Posting `ready` more than once is legal.** It is the supported way to ask for a fresh `context` — after recovering from an error, say, when you want to be certain the config in hand is current. The host re-answers every time, one `context` per `ready`. It is not a subscription you can double up by asking twice.
+
+**Ignore fields you do not recognise.** Later protocol versions may add fields to `context`. A page that exhaustively switches over today's field list, or rejects a message carrying anything it was not written for, breaks on the next addition — for a payload that was, by construction, safe to skip. Read the keys you need and leave the rest alone. `units` is the live example: an app with nothing unit-shaped in it should accept the field and do nothing with it, which is what the reference app does.
 
 ### Your frame stays loaded
 
@@ -129,9 +139,6 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
   body { display: grid; place-content: center; text-align: center;
          background: #111; color: #eee; }
   body.light { background: #fff; color: #111; }
-  /* uiSize is a nudge, not a formula — three buckets is plenty. */
-  body[data-density="compact"] #out { font-size: 0.85rem; }
-  body[data-density="large"]   #out { font-size: 1.25rem; }
 </style>
 <div id="out">Waiting…</div>
 <script>
@@ -148,8 +155,7 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
     if (!ctx) return;
     document.body.classList.toggle('light', ctx.theme === 'light');
     document.documentElement.style.colorScheme = ctx.theme;
-    document.body.dataset.density =
-      ctx.uiSize <= 3 ? 'compact' : ctx.uiSize >= 8 ? 'large' : 'default';
+    document.body.style.fontSize = (10.5 + ctx.uiSize * 0.6) + 'px';   // suggested scale
     document.getElementById('out').textContent =
       ctx.config.topic ? 'Watching ' + ctx.config.topic : 'Not configured';
   }
@@ -163,10 +169,11 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
 Two notes on that code:
 
 - **Order matters.** Add the listener, then post `ready`. The reverse races.
+- It reads `theme`, `uiSize` and `config`, and silently ignores `units`, `slot`, `size` and `device` — along with anything a later version adds. That is the behaviour you want.
 - `'*'` as the target origin for `ready` is fine: the message carries nothing but a request to be told the context. Pinning `event.origin` on the way in is good hygiene if you want it, but `msg.codriver === 1` is the check that is **required** and the one the contract guarantees — an origin you hard-code today is an origin that can strand you when codriver's hosts change.
 - `config.topic` is read without a `null` check because there is no `null` to check for: an optional field the driver left blank is absent from `config`.
 
-Lay your page out with `100%` / viewport units rather than the numbers in `size`. Treat `size` as the hint that tells you which layout variant to pick, not as a value to hard-code.
+Lay your page out with `100%` / viewport units rather than the numbers in `size`. Treat `size` as the hint that tells you which layout variant to pick, not as a value to hard-code — and note that during a resize your own measurement and the last `size` you were sent can briefly disagree, because they are two observations of a change in flight. **Trust your own measurement for layout; treat `size` as the host's statement of intent.**
 
 ## Declaring your inputs
 
@@ -325,7 +332,7 @@ Then work through this list before you submit:
 
 - Load it **cold** — does it render before any interaction?
 - Click **send context** three times — does it render the same, with one connection, not three?
-- Flip **theme** and **uiSize** — does it follow, without recomputing its own pixel sizes?
+- Flip **theme** and **uiSize** — does it follow, changing type size without rescaling its layout?
 - Resize the iframe in devtools and re-send — does it re-lay-out from `size`?
 - Hide the tab for five minutes, then come back — does it reconnect, and is the data current rather than stale?
 - Set `config` to garbage — does it say so, legibly?
@@ -394,7 +401,8 @@ If you genuinely need a breaking change, add the new field alongside the old one
 - [ ] Validates `event.data.codriver === 1` before trusting a message
 - [ ] Posts `ready` **after** attaching its listener
 - [ ] Handles the context message arriving repeatedly, idempotently — including on resize
-- [ ] Follows `theme`, formats to `units`, and treats `uiSize` as a nudge rather than a pixel formula
+- [ ] Ignores context fields it does not recognise, rather than rejecting the message
+- [ ] Follows `theme`, formats to `units`, and sets its **base type size** from `uiSize` rather than scaling its layout
 - [ ] Renders in a 300 × 130 box with no scrolling and no interaction
 - [ ] No animation, no popups, no dialogs, no downloads
 - [ ] Every failure mode renders a short human sentence, and recovers after being hidden and throttled
