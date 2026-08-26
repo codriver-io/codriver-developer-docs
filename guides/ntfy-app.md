@@ -17,6 +17,8 @@ The codriver app subscribes to one topic and renders the most recent message. Th
        publishes                  streams              renders the last one
 ```
 
+It declares the `notifications` integration type, which in v1 is mechanically identical to `widget` — the same iframe, the same context message. The declaration only affects how it is listed in the catalogue.
+
 It is a good first app for the platform because it exercises everything awkward: a long-lived connection over a car's flaky network, a secret in the config, a genuinely empty default state, and a hard limit of one glance to read the result.
 
 ## Its config schema
@@ -38,7 +40,9 @@ Three fields, and each one earns its place:
 
 - **`server` has a default that works.** Most people use the public `ntfy.sh`, so the common case is a field the driver never touches. The `help` line exists only for the minority who self-host, which is exactly what `help` is for.
 - **`topic` is the only thing that is genuinely required of the driver.** Keep the number of those as close to one as you can.
-- **`token` is optional and `secret: true`.** Public ntfy topics need no auth; private ones and self-hosted servers do. Marking it `secret` means the account page masks it after saving. The value still arrives in `config` — your page cannot subscribe without it.
+- **`token` is optional and `secret: true`.** Public ntfy topics need no auth; private ones and self-hosted servers do. `secret` governs the account form and codriver's logging: the field is masked once saved, so the driver can replace it but not read it back. The value itself arrives in `config` in full — your page cannot subscribe without it.
+
+Because `token` is optional, a driver on a public topic leaves it blank and the key is then **absent from `config` entirely**, not present as `null`. That is why the code below tests `if (config.token)` and needs nothing more careful.
 
 Note what is *not* in the schema: no "refresh interval", no "max messages", no theme picker. codriver already tells you the theme, and every other knob is a decision the app should make instead of delegating.
 
@@ -77,6 +81,8 @@ Three things that are easy to get wrong here:
 
 - **Not every line is a notification.** ntfy interleaves `open` and `keepalive` events into the same stream. Filter on `event === 'message'` and ignore the rest — but treat a `keepalive` as proof the connection is alive, because on a car's connection that is the only proof you get.
 - **`since` is what makes a reconnect seamless.** Remember the `id` of the last message you rendered and pass it back on reconnect, so a tunnel does not cost you the message that arrived inside it. Before you have seen anything, `since=10m` gives the driver something to look at on first load instead of an empty box.
+
+  This is also what makes the widget survive being hidden. codriver keeps the frame loaded rather than unmounting it, but Chromium throttles timers in a hidden frame, so a stream can be dead for minutes before the reconnect loop notices — see [your frame stays loaded](/guides/build-an-app#your-frame-stays-loaded). `since` turns that from data loss into a slightly late catch-up.
 - **Cross-origin works.** ntfy allows any origin, so the widget calls it directly from the frame — there is no relay in the middle and no server of ours in the path. Your config, including your token, goes from the account page to your car and nowhere else.
 
 ## Reconnects and errors

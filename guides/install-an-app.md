@@ -12,7 +12,8 @@ That is worth saying plainly, because it explains everything else on this page:
 
 - codriver does not write these apps and does not vouch for them. A codriver reviewer checks each one before it is listed — that it works, that it is what it claims to be, that it behaves in a car. That is a check, not an endorsement, and it is not an audit of the company behind it.
 - The app runs walled off from codriver. It **cannot** see where you are, how fast you are going, where you are headed, or anything about your codriver account. It cannot read your map or change your route. This is built into how apps are shown and is not a setting anyone can turn off — not the developer, not you, not codriver.
-- The only thing an app knows about you is **what you type into its own settings**, plus four cosmetic details: light or dark theme, metric or imperial, your interface size, and whether you are in a car.
+- The only thing an app knows about you is **what you type into its own settings**, plus a few cosmetic details: light or dark theme, metric or imperial, your interface density, and whether you are in a car.
+- Some apps cost money. **codriver does not take that payment and is not part of it** — there is no checkout here and nothing is charged to your codriver account. If an app charges, you pay its developer directly, on their side, and any refund or cancellation is with them too. The catalogue says whether an app is free, a one-time purchase or a subscription so you know before you install.
 
 So the question to ask before installing an app is not "can this see my location" — it cannot. It is the ordinary question you would ask of any website: do I trust these people with the account details I am about to give them?
 
