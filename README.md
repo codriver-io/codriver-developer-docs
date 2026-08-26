@@ -25,7 +25,7 @@ Since 2026-08-26 the production and staging wikis **sync with this repository**
 change appears on the site shortly after; edit a page in the wiki UI and the
 change is committed back here by `Wiki.js sync <wikijs-sync@codriver.io>`.
 
-Two consequences worth knowing:
+Three consequences worth knowing:
 
 - **Pull before you edit.** The wiki can have committed a UI edit since you last
   fetched. `git pull` first, or you will be resolving a conflict Wiki.js has no
@@ -34,6 +34,23 @@ Two consequences worth knowing:
   fallback rather than the normal path — use it to force a push when sync is
   wedged, or to publish to an environment that is not wired up. Everyday
   changes just need a commit.
+- **Sync starts tracking from whatever `main` is at when it is enabled.**
+  Commits already in history are not replayed, so if a wiki is ever
+  re-connected, run `publish.mjs` once to bring its pages up to date, then let
+  sync take over.
+
+### Reconfiguring the storage target
+
+Two things will waste an hour if you rediscover them the hard way:
+
+- The `updateTargets` mutation reads its config values from a wrapper keyed
+  **`v`**, not `value` (`server/graph/resolvers/storage.js`). Send
+  `{"v": "…"}`. Send `{"value": "…"}` and every field is silently stored as
+  `null`, after which the admin UI and the `storage.targets` query both throw
+  `Cannot read properties of null`.
+- Cloudflare's WAF blocks that mutation on the production host. Post it from
+  the origin instead: `curl --resolve developer.codriver.io:443:127.0.0.1 -k`
+  from the Coolify host. Staging is not proxied and takes it directly.
 
 ## Publishing (manual fallback)
 
