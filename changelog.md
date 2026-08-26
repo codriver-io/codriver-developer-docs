@@ -2,6 +2,30 @@
 
 Changes to the codriver developer surface and to this documentation. Newest first.
 
+## 2026-08-25 — apps: a second way to extend codriver
+
+Until now the only extension point was data: publish a feed, get pins on the map. **Apps** add a second one — a catalogue entry a driver installs on their account, which can extend either plane.
+
+**Nothing in this section is live yet.** There is no catalogue, no submission form, and no install button on the account page. The contracts are settled and the implementation is being built against them, which is why the documentation is going up first; every new page carries a dated status note saying the same thing. This changelog gets another entry, with a date, when the surface actually ships — that is the one to trust.
+
+What the platform is:
+
+- Four **integration types**. `pins` and `custom_layer` are the [feed mechanism](/protocols/pull) that already exists, listed in the catalogue rather than registered directly. `widget` and `notifications` are new: your own web page, rendered in a slot beside the map.
+- A page in a `widget` or `notifications` slot runs in a **sandboxed cross-origin iframe on your origin**. codriver never runs your JavaScript in its own page, and your page cannot read the driver's session, location, speed or heading. Nothing location-shaped is passed to a widget in v1. That is a permanent property of the design, not a v1 limitation. See [isolation](/guides/build-an-app#isolation).
+- The host sends your page one message, `context`, carrying `theme`, `units`, `uiSize`, `slot`, `size`, `device` and the driver's `config`. It arrives on load, whenever your page posts `ready`, and on any presentation change — so pages must handle it repeatedly. [Contract](/guides/build-an-app#the-context-message).
+- **Config arrives in that message, never in your URL**, so a topic, token or account name never lands in browser history, referrers or logs.
+- You declare the inputs you need as a **`config_schema`** — at most 12 fields, keys matching `^[a-z][a-z0-9_]{0,31}$`, with `secret: true` for anything that should be masked on the account page. codriver renders the form and stores the answers.
+- Submissions are `pending` until a curator approves them, and **resubmitting creates a new pending version while the approved one keeps serving** — review is never an outage. New versions must stay backward compatible with the config drivers have already saved. [Rules](/guides/build-an-app#versioning-and-backward-compatibility).
+- Occupying a widget slot is a Premium feature for the driver. Browsing the catalogue is public.
+
+New pages:
+
+- **[Build an app](/guides/build-an-app)** — the developer contract end to end: the isolation model and why it is that way, the context message with a working listener, `config_schema`, the embeddability and performance requirements, designing for a glance, a local test harness, submission, review and versioning.
+- **[The ntfy app](/guides/ntfy-app)** — a worked example built on the first real app, an ntfy.sh client that shows phone notifications in the car. Its repository is the reference implementation to copy; neither it nor its deployed page resolves yet.
+- **[Install an app](/guides/install-an-app)** — the driver-facing guide: what an app is, what codriver does and does not vouch for, installing, slots, removing, and what a blank panel means.
+
+The [home page](/home) is reframed around both paths. Nothing about the feed protocols changed.
+
 ## 2026-08-25 — documentation catch-up, and two limits that now bite
 
 This site had not been touched since May. Several pages described an integration shape that was never the one `POST /v2/feeds` actually gives you. Everything below is either a correction to the docs or a change to the service; both are called out.

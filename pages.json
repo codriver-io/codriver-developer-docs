@@ -4,8 +4,8 @@
     {
       "path": "home",
       "file": "home.md",
-      "title": "Build a provider for codriver",
-      "description": "Publish traffic, hazard, camera or charger data to the codriver map.",
+      "title": "Build for codriver",
+      "description": "Publish data to the codriver map, or build an app drivers install in the car.",
       "tags": ["overview", "quickstart"]
     },
     {
@@ -49,6 +49,27 @@
       "title": "Walkthrough: building a provider",
       "description": "An end-to-end feed service, from upstream fetch to registration.",
       "tags": ["examples", "walkthrough"]
+    },
+    {
+      "path": "guides/build-an-app",
+      "file": "guides/build-an-app.md",
+      "title": "Build an app",
+      "description": "Widgets and notifications: the sandboxed iframe contract, the context message, config_schema, review and versioning.",
+      "tags": ["guides", "apps", "widgets"]
+    },
+    {
+      "path": "guides/ntfy-app",
+      "file": "guides/ntfy-app.md",
+      "title": "The ntfy app",
+      "description": "A worked example: showing phone notifications in the car, and the reference implementation to copy.",
+      "tags": ["guides", "apps", "examples"]
+    },
+    {
+      "path": "guides/install-an-app",
+      "file": "guides/install-an-app.md",
+      "title": "Install an app",
+      "description": "For drivers: what apps are, how to install and configure one, slots, and what a blank panel means.",
+      "tags": ["guides", "apps", "users"]
     },
     {
       "path": "changelog",
