@@ -2,7 +2,7 @@
 
 Apps add things to codriver that codriver does not do itself. Some add pins to the map. Some add a small panel next to the map — your notifications, your charge session, whatever the app is for. You choose them from a catalogue and install them on your account.
 
-> **Status — 2026-08-25.** Apps are being built. There is no catalogue and no install button on the account page yet. This page describes how it will work; the [changelog](/changelog) will carry the date it goes live.
+> **Status — 2026-08-26. This is live.** You can browse the [marketplace](https://codriver.io/marketplace) and install an app from your account page now. Screen slots are a Premium feature, and you have two of them.
 
 ## What an app is
 

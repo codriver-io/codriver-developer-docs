@@ -2,7 +2,9 @@
 
 An **app** is a catalogue entry a driver installs on their codriver account. Until now the only way to extend codriver was to publish [data](/protocols/pull) — entities that render as pins on the map. Apps add a second option: your own web page, rendered beside the map in the car.
 
-> **Status — 2026-08-25.** The app platform is being built. The contracts on this page are settled and are what the implementation targets, so you can start building against them today, but nothing here is live yet: there is no catalogue to browse, no submission form, and no install button on the account page. This page is published ahead of the release rather than after it. The [changelog](/changelog) gets a dated entry when the surface goes live, and that is the date to trust.
+> **Status — 2026-08-26. The app platform is live.** The [marketplace](https://codriver.io/marketplace) lists approved apps, the submission form takes new ones, and drivers install them from their account page. Everything on this page describes shipped behaviour.
+>
+> Two caveats worth having up front. Occupying a screen slot is a **Premium** feature for the driver, and a driver has **two** slots. And the in-car side has not yet been measured on an MCU2 car (the eight-year-old hardware), so the slot count there may end up lower than two.
 
 ## What an app is
 
