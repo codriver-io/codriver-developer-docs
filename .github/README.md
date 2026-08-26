@@ -39,6 +39,16 @@ Three consequences worth knowing:
   re-connected, run `publish.mjs` once to bring its pages up to date, then let
   sync take over.
 
+### Why this file lives in `.github/`
+
+Wiki.js's git module imports **every** `.md` file in the repo as a wiki page —
+there is no ignore setting. A `README.md` at the root therefore appeared on the
+public site as a `/README` page. Its file walk skips any path containing
+`.git` (`server/modules/storage/git/storage.js`), so `.github/README.md` is
+excluded, and GitHub still renders this as the repository readme. Keep
+maintainer documentation here, not at the root; anything `.md` at the root is
+published to the world.
+
 ### Reconfiguring the storage target
 
 Two things will waste an hour if you rediscover them the hard way:
