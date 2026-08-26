@@ -39,15 +39,23 @@ Three consequences worth knowing:
   re-connected, run `publish.mjs` once to bring its pages up to date, then let
   sync take over.
 
-### Why this file lives in `.github/`
+### Why this file is a .txt in .github/
 
-Wiki.js's git module imports **every** `.md` file in the repo as a wiki page —
-there is no ignore setting. A `README.md` at the root therefore appeared on the
-public site as a `/README` page. Its file walk skips any path containing
-`.git` (`server/modules/storage/git/storage.js`), so `.github/README.md` is
-excluded, and GitHub still renders this as the repository readme. Keep
-maintainer documentation here, not at the root; anything `.md` at the root is
-published to the world.
+Wiki.js's git module turns EVERY .md, .adoc and .html file in this repo into a
+public wiki page. There is no ignore setting. Both obvious workarounds fail:
+
+  - README.md at the root -> published as /README.
+  - .github/README.md -> published as /github/README. The `.git` path filter in
+    server/modules/storage/git/storage.js only guards importAll(), not the
+    incremental sync that runs every 5 minutes.
+
+Only the three extensions above are treated as pages (server/helpers/page.js,
+contentToExt), so a .txt is skipped outright. GitHub still shows this as the
+repository readme, just without markdown formatting.
+
+THE RULE: anything .md/.adoc/.html in this repo is published to the world.
+Maintainer notes -- infrastructure, hostnames, recipes -- do not belong in one.
+This file was briefly published as a wiki page on 2026-08-26 for that reason.
 
 ### Reconfiguring the storage target
 
