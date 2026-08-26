@@ -6,6 +6,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "check": "node scripts/publish.mjs --check",
+    "check:links": "node scripts/check-links.mjs",
     "pull": "node scripts/publish.mjs --pull",
     "publish:wiki": "node scripts/publish.mjs"
   }

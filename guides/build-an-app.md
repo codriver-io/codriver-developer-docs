@@ -24,7 +24,18 @@ Four things, in the order they matter:
 
 An app can declare more than one. A charger network could publish `pins` for its stations and a `widget` showing the driver's current session.
 
+**`widget` and `notifications` are mechanically identical in v1** — the same iframe, the same context message, the same requirements, the same everything on this page. They differ only as catalogue intent: which one you declare changes how your app is listed and filtered, not how it runs. Declare `notifications` if the app's job is to surface incoming messages, `widget` otherwise. A host-rendered delivery path for `notifications` — codriver drawing the notification itself rather than framing your page — is possible later, but it is not promised and nothing about it is designed.
+
 If you only have data to publish, you do not need an app at all — register a feed and you are done. Start at [entities and kinds](/concepts/entities-and-kinds), then the [pull protocol](/protocols/pull). The rest of this page is about the interface plane.
+
+### Data-plane apps need a feed as well, for now
+
+**As of 2026-08-25 there is no automatic joining between a catalogue entry and a feed.** If you declare `pins` or `custom_layer`, you do two separate things:
+
+1. **Register the feed** through the ordinary feed flow — [pull protocol](/protocols/pull), or [push](/protocols/push) — and get it approved. This is what actually puts your data on the map, and it works today whether or not you ever submit an app.
+2. **Submit a catalogue entry** pointing at that feed, so drivers can find you by browsing rather than by knowing your URL.
+
+Approving your app does **not** create the feed, and registering the feed does not create a catalogue entry. Skipping step 1 gets you a listing that shows nothing. This is a limitation of the first release, not the intended end state.
 
 ## Isolation
 
@@ -52,7 +63,7 @@ The host sends your page exactly one kind of message. It arrives by `postMessage
   "type":     "context",
   "theme":    "dark",        // "dark" | "light"
   "units":    "metric",      // "metric" | "imperial"
-  "uiSize":   5,             // 1..10, the driver's UI scale
+  "uiSize":   6,             // 1..10 density preference; 6 is the default
   "slot":     1,             // 1 | 2 — which slot you are in
   "size":     { "w": 300, "h": 130 },   // CSS pixels
   "device":   "tesla",       // "tesla" | "other"
@@ -66,25 +77,43 @@ The host sends your page exactly one kind of message. It arrives by `postMessage
 | `type` | `"context"` is the only host → page message in v1. |
 | `theme` | Follow it. A light-theme widget in a dark cockpit at night is a flashlight in the driver's face. |
 | `units` | Format distances and speeds accordingly. If your app has nothing unit-shaped, ignore it. |
-| `uiSize` | The driver's chosen interface scale, 1 (smallest) to 10 (largest). Scale your type off it. |
+| `uiSize` | The driver's **density preference**: 1 is compact, 10 is largest, 6 is the default. Not a scale factor — see below. |
 | `slot` | Which of the two widget slots you were installed into. Presentation only; do not change behaviour on it. |
 | `size` | The frame's content box in CSS pixels. Today that is about 300 × 130 and fixed. |
 | `device` | `"tesla"` in the car, `"other"` anywhere else — a phone or a desktop browser signed in to codriver. |
-| `config` | Whatever the driver filled in, keyed by your `config_schema` keys. Missing optional fields are absent, not `null`. |
+| `config` | Whatever the driver filled in, keyed by your `config_schema` keys. An optional field the driver left blank is **omitted from the object**, never present as `null` — that is a guarantee, so `'topic' in config` and `config.topic` agree. |
 
 **Config arrives in the message, never in your URL.** codriver loads your page URL as you submitted it, with no query string appended. That is on purpose: a topic name, an access token or an account handle in a URL ends up in browser history, in `Referer` headers, and in the access log of every asset your page loads. Do not defeat this by copying `config` into `location.search` once you have it.
 
+### uiSize is a preference, not a multiplier
+
+**Do not compute pixels from `uiSize`.** There is deliberately no published formula, because the host already applies its own zoom before your frame is laid out — a widget that also scaled its type by `uiSize` would apply the driver's preference twice and end up either unreadable or clipped.
+
+Lay out against `size`, which is real pixels and already reflects everything the host has done. Then use `uiSize` for a nudge in the same direction: bias your type a step smaller near 1, a step larger near 10, leave it alone around 6. Three buckets is a reasonable amount of attention to pay it, and none at all is defensible.
+
 ### When it arrives
 
-Three times, at least:
+Four times, at least:
 
 1. On the iframe's `load` event — possibly **before** your listener is attached.
 2. Whenever your page posts `{ codriver: 1, type: 'ready' }` to `window.parent`.
 3. On any change to `theme`, `units` or `uiSize` while your page is open.
+4. Whenever the rendered size of your slot changes.
 
 So **handle it arriving more than once**. Make your render function idempotent: take the latest context, redraw, do not accumulate listeners or connections. A theme flip must not open a second connection to your backend.
 
 `ready` is the only message the host accepts from your page. Anything else is ignored.
+
+### Your frame stays loaded
+
+Once mounted, your iframe **stays loaded** for as long as the app is installed. codriver does not tear it down and rebuild it:
+
+- Hiding your widget — a drawer opens over it, a modal takes the screen, the tab goes to the background — sets the frame's `hidden` attribute. It does not unmount you.
+- An install whose config has not changed is never re-created.
+
+That is what makes a long-lived connection a reasonable design here. It is not a promise that the connection survives, though, and this is the trap: **Chromium throttles timers in hidden frames.** Your reconnect timer, your keepalive check and your poll all slow to a crawl while you are hidden, and can be minutes late catching up. A stream can be dead for a while before your code notices.
+
+So build for **resumption** rather than for continuity. Track the last thing you saw, and on reconnect ask your backend for everything since — ntfy's `since` parameter is exactly this, and the [ntfy app](/guides/ntfy-app#reconnects-and-errors) shows the shape. An app that assumes an unbroken socket works beautifully on a desk and comes back blank after a tunnel.
 
 ### A minimal listener
 
@@ -100,6 +129,9 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
   body { display: grid; place-content: center; text-align: center;
          background: #111; color: #eee; }
   body.light { background: #fff; color: #111; }
+  /* uiSize is a nudge, not a formula — three buckets is plenty. */
+  body[data-density="compact"] #out { font-size: 0.85rem; }
+  body[data-density="large"]   #out { font-size: 1.25rem; }
 </style>
 <div id="out">Waiting…</div>
 <script>
@@ -116,7 +148,8 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
     if (!ctx) return;
     document.body.classList.toggle('light', ctx.theme === 'light');
     document.documentElement.style.colorScheme = ctx.theme;
-    document.documentElement.style.fontSize = (12 + ctx.uiSize) + 'px';
+    document.body.dataset.density =
+      ctx.uiSize <= 3 ? 'compact' : ctx.uiSize >= 8 ? 'large' : 'default';
     document.getElementById('out').textContent =
       ctx.config.topic ? 'Watching ' + ctx.config.topic : 'Not configured';
   }
@@ -130,7 +163,8 @@ This is a complete, working app. Save it as `index.html`, serve it over https, a
 Two notes on that code:
 
 - **Order matters.** Add the listener, then post `ready`. The reverse races.
-- `'*'` as the target origin for `ready` is fine: the message carries nothing but a request to be told the context. If you would rather pin it, the host origin is `https://app.codriver.io`. Pinning `event.origin` on the way in is likewise good hygiene, but `msg.codriver === 1` is the check that is required and the one the contract guarantees.
+- `'*'` as the target origin for `ready` is fine: the message carries nothing but a request to be told the context. Pinning `event.origin` on the way in is good hygiene if you want it, but `msg.codriver === 1` is the check that is **required** and the one the contract guarantees — an origin you hard-code today is an origin that can strand you when codriver's hosts change.
+- `config.topic` is read without a `null` check because there is no `null` to check for: an optional field the driver left blank is absent from `config`.
 
 Lay your page out with `100%` / viewport units rather than the numbers in `size`. Treat `size` as the hint that tells you which layout variant to pick, not as a value to hard-code.
 
@@ -165,7 +199,7 @@ Lay your page out with `100%` / viewport units rather than the numbers in `size`
 
 At most **12 fields**. If you need more than twelve, you are asking the driver to do configuration that belongs on your own side.
 
-A `secret: true` field is masked on the account page — the driver can replace it but cannot read it back. It is **not** withheld from your page: the whole point of an access token is that your page uses it, so it arrives in `config` like any other value.
+`secret: true` governs the **account form and codriver's logging**, nothing else. The value is masked when the form is re-rendered, so the driver can replace it but cannot read it back, and it is kept out of logs. It is **not** withheld from your page — the whole point of an access token is that your page uses it, so it arrives in `config` in full, like any other value.
 
 ### What v1 does not validate
 
@@ -179,14 +213,12 @@ This is the single most common way an app fails, and it fails silently: the fram
 
 Your page must not send either of:
 
-- `X-Frame-Options: DENY` or `X-Frame-Options: SAMEORIGIN`
-- a Content-Security-Policy `frame-ancestors` directive that excludes codriver
+- `X-Frame-Options`, in any form — `DENY` and `SAMEORIGIN` both block codriver
+- a Content-Security-Policy `frame-ancestors` directive
 
-The simplest correct answer is to send neither header. If you want an explicit allowlist, use:
+**Send neither header.** That is not a shortcut, it is the correct configuration: an allowlist you pin today is an allowlist that goes stale when codriver's hosts change, and the failure mode of a stale one is a blank widget in every car with no error anywhere. Not restricting `frame-ancestors` at all keeps working through host changes without you touching anything.
 
-```
-Content-Security-Policy: frame-ancestors https://app.codriver.io;
-```
+If your organisation genuinely requires an explicit allowlist, **ask <support@codriver.io> for the current list of origins** rather than guessing from what you see in a browser — and expect to update it when you are told to.
 
 Check what you actually send, from outside your network:
 
@@ -194,7 +226,7 @@ Check what you actually send, from outside your network:
 curl -sI https://your-app.example/ | grep -iE 'x-frame-options|content-security-policy'
 ```
 
-You want that to print nothing, or a `frame-ancestors` that names codriver. Self-hosted dashboards very commonly ship `X-Frame-Options: SAMEORIGIN` by default — as do a lot of copied-and-pasted nginx hardening snippets, several platform "security headers" toggles, and some reverse proxies. If you are wrapping an existing dashboard, assume it is set until you have proved otherwise.
+You want that to print nothing. If you send a Content-Security-Policy for other reasons, the line that comes back must have no `frame-ancestors` in it. Self-hosted dashboards very commonly ship `X-Frame-Options: SAMEORIGIN` by default — as do a lot of copied-and-pasted nginx hardening snippets, several platform "security headers" toggles, and some reverse proxies. If you are wrapping an existing dashboard, assume it is set until you have proved otherwise.
 
 codriver probes this at submission time and will tell you if your page refuses to be framed. It is a probe of one URL at one moment, though — a header you add later is not caught, and the failure shows up as blank widgets in cars.
 
@@ -293,7 +325,9 @@ Then work through this list before you submit:
 
 - Load it **cold** — does it render before any interaction?
 - Click **send context** three times — does it render the same, with one connection, not three?
-- Flip **theme** and **uiSize** — does it follow?
+- Flip **theme** and **uiSize** — does it follow, without recomputing its own pixel sizes?
+- Resize the iframe in devtools and re-send — does it re-lay-out from `size`?
+- Hide the tab for five minutes, then come back — does it reconnect, and is the data current rather than stale?
 - Set `config` to garbage — does it say so, legibly?
 - Kill your backend — does it say so, and recover when the backend returns?
 - Look at it from two metres away for one second. Can you read it?
@@ -311,15 +345,17 @@ Submission is a form, not an API. You will be asked for:
 | Installation instructions | ≤ 512 characters — what the driver has to do on **your** side first |
 | `config_schema` | The JSON above; ≤ 12 fields |
 | Integration types | One or more of `pins`, `custom_layer`, `notifications`, `widget` |
-| Page URL | The https page codriver embeds. Required for `widget` and `notifications`. |
-| Website | Your own link |
+| `widget_url` | The https page codriver embeds. **Required if and only if** your integration types include `widget` or `notifications`. |
+| `website_url` | Your own link, shown in the catalogue. Not what gets embedded — see above. |
 | Docs | Where a driver reads more |
 | Cost | Free, one-time fee, or recurring subscription |
 | Version | Semver, e.g. `1.0.0` |
 
+`widget_url` and `website_url` are separate fields and are not interchangeable. `widget_url` is the page that renders in the car and must satisfy every requirement above; `website_url` is your product page, and codriver never frames it.
+
 Write the **installation instructions** for someone who has never used your product. "Create a topic at ntfy.sh, then send test notifications to it from your phone" is the kind of sentence that saves you the support mail.
 
-The **cost** field is disclosure, shown in the catalogue so a driver knows before installing. Anything you charge is between you and them.
+The **cost** field is disclosure and nothing more: it is shown in the catalogue so a driver knows what they are getting into before installing. **codriver takes no payment and brokers nothing.** There is no billing integration, no revenue share, no checkout — if you charge for your app, you collect it yourself, on your own side, and the commercial relationship is strictly between you and the driver.
 
 ## Review
 
@@ -354,15 +390,16 @@ If you genuinely need a breaking change, add the new field alongside the old one
 ## Checklist
 
 - [ ] https, public hostname, valid certificate
-- [ ] No `X-Frame-Options`; no `frame-ancestors` that excludes codriver — verified with `curl -sI` against the deployed URL
+- [ ] No `X-Frame-Options`, no `frame-ancestors` — verified with `curl -sI` against the deployed URL
 - [ ] Validates `event.data.codriver === 1` before trusting a message
 - [ ] Posts `ready` **after** attaching its listener
-- [ ] Handles the context message arriving repeatedly, idempotently
-- [ ] Follows `theme` and `uiSize`; formats to `units`
+- [ ] Handles the context message arriving repeatedly, idempotently — including on resize
+- [ ] Follows `theme`, formats to `units`, and treats `uiSize` as a nudge rather than a pixel formula
 - [ ] Renders in a 300 × 130 box with no scrolling and no interaction
 - [ ] No animation, no popups, no dialogs, no downloads
-- [ ] Every failure mode renders a short human sentence
+- [ ] Every failure mode renders a short human sentence, and recovers after being hidden and throttled
 - [ ] ≤ 12 config fields, keys matching `^[a-z][a-z0-9_]{0,31}$`, secrets marked `secret: true`
+- [ ] `widget_url` set, and distinct from `website_url`
 - [ ] Installation instructions a stranger can follow
 
 ## See also

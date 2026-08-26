@@ -62,6 +62,13 @@ This is a public, developer-facing surface, and it stays that way:
   the 2026-08 rewrite existed because that had stopped happening.
 - When behaviour changes, add a [changelog](changelog.md) entry in the same
   commit.
+- Where something is not built yet, say so plainly, with a date. Do not
+  describe an unshipped surface in the present tense — three months of that is
+  what the 2026-08 rewrite was cleaning up.
+- Run `npm run check:links` before you commit. It needs no token and no
+  network: every `](/…)` must point at a path in `pages.json`, and every
+  `#anchor` must match a heading in the page it points at. Renaming a heading
+  is the easy way to break a link nobody notices for a month.
 
 Related: the marketing site's `/developers` page is positioning copy and links
 here; this wiki is canonical for the contract.
