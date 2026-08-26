@@ -43,6 +43,10 @@ when a claim changed and why, and open an issue against a page that is wrong.
 The three months of drift that the entry below describes happened because there
 was no such record.
 
+Both the production site and the staging one at `developer.staging.codriver.io`
+follow the same repository, so a change can be read on staging before it lands
+here.
+
 ## 2026-08-25 — documentation catch-up, and two limits that now bite
 
 This site had not been touched since May. Several pages described an integration shape that was never the one `POST /v2/feeds` actually gives you. Everything below is either a correction to the docs or a change to the service; both are called out.
