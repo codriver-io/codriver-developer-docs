@@ -6,6 +6,53 @@ An **app** is a catalogue entry a driver installs on their codriver account. Unt
 >
 > Two caveats worth having up front. Occupying a screen slot is a **Premium** feature for the driver, and a driver has **two** slots. And the in-car side has not yet been measured on an MCU2 car (the eight-year-old hardware), so the slot count there may end up lower than two.
 
+## Start from an app template
+
+These public repositories are working examples you can fork or clone and adapt.
+They use plain HTML, CSS and JavaScript, with no frontend framework or build step.
+
+| Template | What it displays | What you can learn |
+|---|---|---|
+| [Weather](https://github.com/codriver-io/codriver-app-weather) | Current conditions and the next four hours for a chosen city. | City configuration, metric/imperial units, periodic refreshes, and keeping the last forecast visible when a request fails. |
+| [Crypto prices](https://github.com/codriver-io/codriver-app-crypto) | Prices and 24-hour changes for up to three coins. | Coin and currency settings, compact rows, periodic refreshes, and stale-data states. |
+| [ntfy notifications](https://github.com/codriver-io/codriver-app-ntfy) | Messages from a configured notification topic. | Streaming updates, reconnecting after an outage, and handling optional authentication. See the [ntfy walkthrough](/guides/ntfy-app). |
+
+Each example includes the widget page (`public/index.html`), a local host
+simulator (`public/dev.html`), and a manifest (`codriver-app.json`) describing
+its catalogue entry and configuration fields. The simulator lets you change
+settings, theme, units and text size without running codriver in a car.
+
+### Run a template locally
+
+For example, start with Weather. You need Git and Python 3:
+
+```bash
+git clone https://github.com/codriver-io/codriver-app-weather.git
+cd codriver-app-weather
+python3 -m http.server 8792 -d public
+```
+
+Open `http://localhost:8792/dev.html` and use **Send context** to apply settings.
+Resize the preview to check the layout. The same static-server approach works
+with the other repositories; their READMEs include app-specific instructions.
+
+### Make it your own
+
+1. Replace the example's content and data source with your own, keeping the
+   `ready` / `context` handshake described below.
+2. Update the name, description, URLs and `config_schema` in the manifest.
+3. Test both themes, text sizes, configuration changes and network failures in
+   the local simulator, then check the app in codriver.
+4. Host your page at your own public HTTPS URL. If you use an example's
+   deployment script, change its hosting project name before deploying.
+5. Add the URL as a **Custom page** to try it in a slot, or submit your own
+   catalogue entry for review. Forking a repository does not register an app.
+
+The source code is MIT licensed. External data and services have separate
+licenses, attribution requirements and usage limits; check those before
+publishing your adaptation. Keep tokens and other secrets out of your source
+code and widget URL.
+
 ## What an app is
 
 Four things, in the order they matter:
