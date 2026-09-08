@@ -16,6 +16,11 @@ They use plain HTML, CSS and JavaScript, with no frontend framework or build ste
 | [Weather](https://github.com/codriver-io/codriver-app-weather) | Current conditions and the next four hours for a chosen city. | City configuration, metric/imperial units, periodic refreshes, and keeping the last forecast visible when a request fails. |
 | [Crypto prices](https://github.com/codriver-io/codriver-app-crypto) | Prices and 24-hour changes for up to three coins. | Coin and currency settings, compact rows, periodic refreshes, and stale-data states. |
 | [ntfy notifications](https://github.com/codriver-io/codriver-app-ntfy) | Messages from a configured notification topic. | Streaming updates, reconnecting after an outage, and handling optional authentication. See the [ntfy walkthrough](/guides/ntfy-app). |
+| [Codriver Radio / Playlist](https://github.com/codriver-io/codriver-app-playlist) | A compact player for two original Codriver tracks. | User-initiated audio playback, track switching, themes and text sizing, with no configuration or external API. |
+
+Codriver Radio is an audio example: playback starts with a tap, and its play
+and next-track controls are for use **while parked**. It is not an example of
+the passive, silent widgets described in the driving requirements below.
 
 Each example includes the widget page (`public/index.html`), a local host
 simulator (`public/dev.html`), and a manifest (`codriver-app.json`) describing
@@ -48,7 +53,9 @@ with the other repositories; their READMEs include app-specific instructions.
 5. Add the URL as a **Custom page** to try it in a slot, or submit your own
    catalogue entry for review. Forking a repository does not register an app.
 
-The source code is MIT licensed. External data and services have separate
+The source code is MIT licensed. Codriver Radio’s songs and cover artwork are
+copyright Codriver and are **not** covered by its MIT code license; use your own
+media or obtain permission when adapting that example. External data and services have separate
 licenses, attribution requirements and usage limits; check those before
 publishing your adaptation. Keep tokens and other secrets out of your source
 code and widget URL.
