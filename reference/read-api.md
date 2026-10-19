@@ -66,6 +66,23 @@ curl 'https://app.codriver.io/v2/entities/nearby?lat=45.4699&lng=-73.5461&radius
 
 Coordinates are GeoJSON order — `[lng, lat]`.
 
+Treat `id` as an opaque string, not a UUID. Built-in live incidents use stable
+`incident:v1:<base64url external_id>` IDs; the ID stays the same when a driver's
+first confirm or dispute saves the trusted source snapshot in the database.
+
+Live source incidents, including reported jam pins and closure spans, are shared
+in Redis. Their five-minute freshness starts at a real requested-area upstream
+request; cached response replay cannot renew it, and explicit removal can hide a
+pin sooner. Saved driver consensus/suppression is applied before matching events
+from different sources are merged on each incident-inclusive read. A saved
+snapshot alone never keeps an expired or removed source pin visible.
+
+The first authenticated confirm **or dispute** saves the trusted snapshot and
+observation atomically in Postgres. Voted source histories are retained after the
+live record disappears. If Redis is unavailable, ordinary durable layers remain
+readable and the incident source is marked offline; stale database snapshots are
+not used as live fallback. See [incident lifecycle](/concepts/entities-and-kinds#built-in-incident-lifecycle).
+
 `sources[]` reports per-source health, so a caller can tell "nothing here" apart from "that source is down".
 
 ### Access and limits
@@ -75,7 +92,7 @@ Coordinates are GeoJSON order — `[lng, lat]`.
 | Auth | None required. Without an account you are rate-limited as a guest. |
 | Rate limit | 120 requests/minute with an account, 60 as a guest. |
 | CORS | **Not enabled.** Browser calls from another origin will fail; call it from a server, a script or a shell. |
-| Caching | `Cache-Control: public, max-age=10`. Do not poll faster than that; you will get the same bytes. |
+| Caching | Incident-inclusive reads use `Cache-Control: no-store` in the default Redis mode. Nonincident-only reads (and Postgres rollback mode) retain `public, max-age=10`. Respect the response header and rate limits. |
 
 Charger networks are tiered: a guest sees Tesla only, an account adds one more network, a Premium account has no cap. Whatever you ask for, `networks_applied` tells you what you actually got.
 

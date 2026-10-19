@@ -2,22 +2,28 @@
 
 Every entity codriver renders is one of the kinds below. Providers map their upstream's vocabulary to this taxonomy on output. Anything outside this list is rejected at ingest.
 
+The TTLs below are seeded defaults for **durable reports and feed ingestion**.
+They do not control built-in live incident freshness: that source uses the
+[five-minute Redis lifecycle](/concepts/entities-and-kinds#built-in-incident-lifecycle),
+with durable history saved on first driver confirm/dispute. Feeds can override
+these defaults with `ttl_seconds`.
+
 ## Alerts (transient incidents)
 
 | Kind | Default TTL | Description |
 |---|---|---|
-| `alert.police` | 5 min | Police presence, speed trap, checkpoint |
-| `alert.accident` | 5 min | Accident, crash, collision |
-| `alert.hazard` | 5 min | Generic hazard — use only if no subtype below fits |
-| `alert.hazard.car_stopped` | 5 min | Stopped vehicle on shoulder / lane |
-| `alert.hazard.object_on_road` | 5 min | Debris, tire, fallen cargo, lost load |
-| `alert.hazard.pothole` | 15 min | Pothole, lane damage |
-| `alert.hazard.animal` | 5 min | Animal on road (live or roadkill) |
-| `alert.hazard.fog` | 15 min | Fog patch reducing visibility |
-| `alert.hazard.ice` | 15 min | Ice, freezing rain, slippery surface |
-| `alert.hazard.flooding` | 15 min | Flooded road, heavy rain pooling |
-| `alert.road_closed` | 15 min | Full road closure (event, accident, work) |
-| `alert.construction` | 15 min | Construction zone, lane reduction, work in progress |
+| `alert.police` | 10 min | Police presence, speed trap, checkpoint |
+| `alert.accident` | 10 min | Accident, crash, collision |
+| `alert.hazard` | 10 min | Generic hazard — use only if no subtype below fits |
+| `alert.hazard.car_stopped` | 10 min | Stopped vehicle on shoulder / lane |
+| `alert.hazard.object_on_road` | 10 min | Debris, tire, fallen cargo, lost load |
+| `alert.hazard.pothole` | 7 d | Pothole, lane damage |
+| `alert.hazard.animal` | 4 h | Animal on road (live or roadkill) |
+| `alert.hazard.fog` | 10 min | Fog patch reducing visibility |
+| `alert.hazard.ice` | 10 min | Ice, freezing rain, slippery surface |
+| `alert.hazard.flooding` | 2 h | Flooded road, heavy rain pooling |
+| `alert.road_closed` | 2 h | Full road closure (event, accident, work) |
+| `alert.construction` | 7 d | Construction zone, lane reduction, work in progress |
 
 **Properties commonly seen on alerts**:
 
@@ -39,17 +45,17 @@ Every entity codriver renders is one of the kinds below. Providers map their ups
 }
 ```
 
-## Events (transient, polyline-shaped)
+## Reported traffic pins
 
 | Kind | Default TTL | Description |
 |---|---|---|
-| `traffic.jam` | 15 min | Congestion / stand-still traffic |
+| `traffic.jam` | 5 min | Driver-reported traffic jam (a point pin, separate from congestion ribbons) |
 
 **Properties on jams**:
 
 ```jsonc
 {
-  "severity":         3,                            // 1-5
+  "severity":         3,                            // 1-4 for built-in reported traffic
   "speed_kmh":        12.4,                         // current avg speed
   "length_m":         850,                          // jam length in meters
   "delay_s":          240,                          // delay vs free-flow
@@ -61,15 +67,15 @@ Every entity codriver renders is one of the kinds below. Providers map their ups
 
 The entity's `lat` / `lng` is the position of the jam. `line_coordinates` is accepted and stored, but **an entity published by a feed is drawn as a point** — codriver does not render a feed-supplied polyline. Send it if you have it (it is useful data), but do not count on a shape appearing on the map.
 
-## POIs (persistent)
+## POIs (long-lived)
 
 | Kind | Default TTL | Description |
 |---|---|---|
-| `camera.speed` | persistent | Fixed speed camera |
-| `camera.red_light` | persistent | Red-light enforcement camera |
-| `camera.avg_speed` | persistent | Average-speed enforcement (entry/exit pair) |
-| `charger.supercharger` | persistent | Tesla Supercharger (DC fast, 150-250 kW typical) |
-| `charger.destination` | persistent | Tesla Destination charger (AC, 7-22 kW typical) |
+| `camera.speed` | 30 d | Fixed speed camera |
+| `camera.red_light` | 30 d | Red-light enforcement camera |
+| `camera.avg_speed` | 30 d | Average-speed enforcement (entry/exit pair) |
+| `charger.supercharger` | 30 d | Tesla Supercharger (DC fast, 150-250 kW typical) |
+| `charger.destination` | 30 d | Tesla Destination charger (AC, 7-22 kW typical) |
 
 **Properties on cameras**:
 
