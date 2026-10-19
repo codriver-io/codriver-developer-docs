@@ -67,19 +67,52 @@ You don't see other providers' raw data. Your layer is yours; codriver merges it
 
 ## TTL semantics
 
-Entities have a lifetime. After `expires_at` (= `observed_at + ttl_seconds`) passes, codriver soft-retires the entity — it stops appearing in driver responses, but is retained for audit purposes.
+This policy applies to durable Codriver reports and third-party feed entities.
+The built-in incident source has the separate lifecycle below. Seeded defaults
+are listed here; an explicit feed `ttl_seconds` overrides them.
 
 | Kind family | Default TTL |
 |---|---|
-| `alert.police` / `alert.accident` / most `alert.hazard.*` | 5 min |
-| `alert.hazard.pothole` | 15 min |
-| `alert.road_closed` / `alert.construction` | 15 min |
-| `traffic.jam` | 15 min |
-| `camera.*` / `charger.*` | persistent (no TTL) |
+| `traffic.jam` | 5 min |
+| `alert.police` / `alert.accident` / generic hazard, stopped car, object, fog, ice | 10 min |
+| `alert.hazard.flooding` / `alert.road_closed` | 2 h |
+| `alert.hazard.animal` | 4 h |
+| `alert.hazard.pothole` / `alert.construction` | 7 d |
+| `camera.*` / `charger.*` | 30 d |
 
-If you keep publishing the same `external_id`, codriver refreshes `last_seen_at` and `expires_at` on each push/pull — the row stays alive as long as you keep claiming it.
+Durable ingestion sets `expires_at` from ingestion time plus the effective TTL;
+`observed_at` records the observation time, rather than setting that expiry.
+An explicit `null` (or `0`) TTL is persistent. Reads exclude expired rows before
+the retirement cron marks them retired. Eligible retired rows and their dependent
+observations are purged after the retention window (seven days by default);
+saved built-in source histories with confirms/disputes are excluded from that purge.
 
-If you stop publishing, the row dies naturally at `expires_at`. No retraction call needed.
+Re-publishing the same `external_id` refreshes the row, subject to consensus and
+suppression. Unchanged repeats seen within the last sixty seconds skip the DB
+write. A dispute stamp survives re-ingestion; feed data cannot erase a driver's
+vote. If publishing stops, a time-limited row expires naturally.
+
+## Built-in incident lifecycle
+
+The `community-incidents` source uses a shared Redis live store rather than
+writing every Waze alert, reported jam pin or closure span to Postgres. A real
+upstream response in the requested area establishes five minutes of freshness
+from request start. Replay cannot extend it; explicit removals are timestamped
+so late responses cannot resurrect a removed record. An empty upstream delta
+is not proof of removal.
+
+A driver's first confirm or dispute saves the trusted snapshot and observation
+in one Postgres transaction. The `incident:v1:` public ID stays stable. Saved
+consensus/suppression is joined onto live records at read time, before the usual
+cross-source merge. Driver history remains after Redis expiry/removal, but does
+not keep the source pin visible. A confirm never renews Redis freshness.
+
+An app redeploy preserves the separate Redis service while TTLs advance.
+Redis crash recovery depends on persistence; driver observations remain in
+Postgres. With Redis unavailable, unsaved source votes return a retryable 503;
+an expired cache-only ID returns 409 and requires a refreshed map. Saved source
+rows can still receive observations. This lifecycle does not change third-party
+feed ingestion, and it is separate from congestion ribbons.
 
 ## Reserved property keys
 
@@ -95,7 +128,7 @@ The list can grow when codriver starts interpreting a new key. Two consequences 
 
 codriver dedupes by `(your-feed, external_id)`. Two consequences:
 
-- **Re-publishing is idempotent.** Same `external_id` → same row, properties refreshed, expires_at extended.
+- **Re-publishing is idempotent.** Same `external_id` → same row, subject to consensus, suppression and unchanged-repeat write suppression.
 - **`external_id` must be stable per real-world thing.** If your upstream changes their id every fetch, the entity flickers in/out instead of refreshing. Wrap with your own stable id (`sha256(name + lat + lng).slice(0,16)`).
 
 ## Visibility and trust
