@@ -108,8 +108,11 @@ cross-source merge. Driver history remains after Redis expiry/removal, but does
 not keep the source pin visible. A confirm never renews Redis freshness.
 
 An app redeploy preserves the separate Redis service while TTLs advance.
-Redis crash recovery depends on persistence; driver observations remain in
-Postgres. With Redis unavailable, unsaved source votes return a retryable 503;
+Redis crash recovery depends on persistence; memory pressure can evict live
+records before expiry. Five minutes is a freshness bound, not a minimum
+retention guarantee. Losing removal-ordering metadata can also allow a delayed
+older response within that original freshness window. Driver observations remain
+in Postgres. With Redis unavailable, unsaved source votes return a retryable 503;
 an expired cache-only ID returns 409 and requires a refreshed map. Saved source
 rows can still receive observations. This lifecycle does not change third-party
 feed ingestion, and it is separate from congestion ribbons.
